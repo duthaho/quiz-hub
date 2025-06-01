@@ -162,13 +162,13 @@
                 octaves: 2,
                 oscillator: { type: "sine" },
                 envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.05 },
-                volume: -18
+                volume: -5
             }).toDestination();
 
             finishSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: { type: 'triangle' },
                 envelope: { attack: 0.02, decay: 0.2, sustain: 0.1, release: 0.5 },
-                volume: -12
+                volume: -3
             }).toDestination();
             
             const storedMuteState = localStorage.getItem(SOUND_MUTED_KEY);
