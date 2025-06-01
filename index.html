@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Hub - Test Your Knowledge</title>
+
+    <meta name="description" content="Quiz Hub - A fun and interactive platform to test and improve your knowledge on various topics including MySQL, JavaScript, HTML, CSS, and more.">
+    <meta name="keywords" content="quiz, learning, tech quiz, mysql quiz, javascript quiz, html quiz, css quiz, programming quiz, duthaho, quiz hub, interactive quiz, online quiz">
+    <meta name="author" content="duthaho">
+    <link rel="canonical" href="https://duthaho.github.io/quiz-hub/">
+
+    <meta property="og:title" content="Quiz Hub - Test Your Knowledge">
+    <meta property="og:description" content="A fun and interactive platform to test and improve your knowledge on various topics.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://duthaho.github.io/quiz-hub/">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Quiz Hub - Test Your Knowledge">
+    <meta name="twitter:description" content="A fun and interactive platform to test and improve your knowledge on various topics.">
+    <meta name="twitter:image:alt" content="Quiz Hub Logo">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* Custom scrollbar for webkit browsers (Dark theme) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; /* slate-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5; /* indigo-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1; /* indigo-500 */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+         .question-option-on-card {
+            /* Dark mode style */
+            background-color: rgba(71, 85, 105, 0.7); /* slate-700 with opacity */
+            padding: 0.75rem; /* p-3 */
+            border-radius: 0.375rem; /* rounded-md */
+            font-size: 0.875rem; /* text-sm */
+            color: #d1d5db; /* text-slate-300 */
+            border: 1px solid transparent;
+        }
+        #appContainer {
+            position: relative;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 transition-colors duration-300">
+
+    <div id="appContainer" class="min-h-screen flex flex-col items-center p-4 sm:p-6 md:p-8">
+        <div id="topRightControls" class="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 flex space-x-2">
+            </div>
+        <h1 id="mainTitle" class="text-3xl sm:text-4xl font-bold text-indigo-300 mb-6 sm:mb-8 text-center">Quiz Hub</h1>
+        <div id="pageContentWrapper" class="w-full max-w-2xl lg:max-w-4xl bg-slate-800 p-6 sm:p-8 rounded-xl shadow-2xl transition-colors duration-300">
+            <section id="quizListPage" style="display: none;">
+                </section>
+            <section id="quizInProgressPage" style="display: none;">
+                </section>
+            <section id="quizResultsPage" style="display: none;">
+                </section>
+            <section id="explanationModePage" style="display: none;">
+                </section>
+        </div>
+    </div>
+
+<script>
+    // --- Mock Data ---
+    const sampleQuizzes = [
+      {
+        id: 'mysql_indexing',
+        title: 'MySQL Indexing', 
+        description: 'Test your knowledge of MySQL indexing concepts.',
+        questions: [
+            { id: 'idx_q1', text: 'What is the primary function of a MySQL index?', options: ['Encrypt data for security', 'Speed up data retrieval queries', 'Reduce disk space usage', 'Simplify table schema design'], correctAnswerIndex: 1, explanation: 'Indexes (e.g., B+ trees) optimize queries like SELECT ... WHERE by allowing quick row lookups, reducing full table scans. They increase disk usage and can slow writes, but their main goal is query performance.'},
+            { id: 'idx_q2', text: 'Why does MySQL primarily use B+ trees for indexes?', options: ['They are faster for all query types', 'They support range queries and sorting', 'They use less memory than hash indexes', 'They simplify index maintenance'], correctAnswerIndex: 1, explanation: 'B+ trees store data in sorted order, enabling efficient range queries (WHERE id BETWEEN 100 AND 200) and sorting (ORDER BY id). Hash indexes only support equality checks, not ranges or sorting.'},
+            { id: 'idx_q3', text: 'In InnoDB, what does a clustered index store in its leaf nodes?', options: ['Only the primary key', 'The indexed column and primary key', 'The entire row data', 'A pointer to the secondary index'], correctAnswerIndex: 2, explanation: 'In InnoDB, the clustered index (e.g., on id in users) stores all columns in its leaf nodes, allowing direct row access for queries like WHERE id = 1. Secondary indexes store the indexed column and primary key.'},
+            { id: 'idx_q4', text: 'What does a secondary index require to fetch non-indexed columns?', options: ['A full table scan', 'A bookmark lookup', 'A range scan', 'A hash lookup'], correctAnswerIndex: 1, explanation: "Secondary indexes (e.g., idx_email) store the indexed column (email) and primary key (id). To fetch other columns (e.g., username), MySQL performs a bookmark lookup to the clustered index, adding overhead compared to clustered index access."},
+            { id: 'idx_q5', text: 'Which index in the users table has the highest cardinality?', options: ['idx_status on status (0 or 1)', "idx_email on email (~9,900 unique values)", "idx_last_login on last_login (~5,000 unique values)", "idx_username_prefix on username(8) (~8,000 unique values)"], correctAnswerIndex: 1, explanation: "Cardinality is the number of unique values. idx_email (~9,900) is highest, followed by idx_username_prefix (~8,000), idx_last_login (~5,000), and idx_status (2). High cardinality improves query selectivity."},
+            { id: 'idx_q6', text: 'What does ANALYZE TABLE primarily do?', options: ['Rebuilds all indexes', 'Updates optimizer statistics', 'Deletes duplicate rows', 'Compresses table data'], correctAnswerIndex: 1, explanation: 'ANALYZE TABLE refreshes statistics like cardinality, row count, and histograms, ensuring the optimizer chooses efficient plans. Without it, outdated stats may lead to full table scans instead of index usage.'},
+            { id: 'idx_q7', text: 'In an EXPLAIN output, what does type: ref indicate?', options: ['A full table scan', 'An index scan for equality conditions', 'A full index scan', 'A range scan on an index'], correctAnswerIndex: 1, explanation: "type: ref means the query uses an index for equality checks (e.g., WHERE email = 'john@example.com'), scanning few rows. ALL is a full table scan, index is a full index scan, and range is for range queries."},
+            { id: 'idx_q8', text: 'What is a key benefit of a prefix index on email(10) in the users table?', options: ['Supports all LIKE patterns', 'Reduces index storage size', 'Improves cardinality', 'Enables range queries'], correctAnswerIndex: 1, explanation: "Prefix indexes store only the first 10 characters of email, saving disk space compared to a full index. They support LIKE 'john.doe@%' but not '%example.com', and cardinality may be lower, reducing selectivity."},
+            { id: 'idx_q9', text: "When should you use a full-text index on the bio column instead of LIKE '%term%'?", options: ["For exact matches like WHERE bio = 'software engineer'", "For prefix queries like WHERE bio LIKE 'software%'", "For keyword searches like MATCH(bio) AGAINST('software engineer')", "For sorting like ORDER BY bio"], correctAnswerIndex: 2, explanation: "Full-text indexes optimize keyword searches with MATCH ... AGAINST, supporting stemming and relevance ranking. LIKE '%term%' causes full table scans, while prefix or exact queries use B-tree indexes."},
+            { id: 'idx_q10', text: 'Which EXPLAIN output indicates a query uses a covering index?', options: ['Extra: Using filesort', 'Extra: Using index', 'type: ALL', 'type: range'], correctAnswerIndex: 1, explanation: "Extra: Using index means the query retrieves all needed columns from the index alone (e.g., SELECT email FROM users WHERE email = 'john@example.com' with idx_email), avoiding table access. Using filesort indicates sorting, ALL is a full scan, and range is for ranges."},
+            { id: 'idx_q11', text: "How can you index the JSON field profile->>'$.role' in MySQL 5.7?", options: ['Multi-valued index', 'Functional index', 'Generated column with B-tree index', 'Full-text index'], correctAnswerIndex: 2, explanation: "MySQL 5.7 supports JSON but not functional indexes (8.0.13+) or multi-valued indexes (8.0.17+). A generated column (e.g., role AS (JSON_UNQUOTE(profile->>'$.role')) STORED) with a B-tree index optimizes WHERE role = 'admin'."},
+            { id: 'idx_q12', text: 'What is the main purpose of a multi-valued index in MySQL 8.0.17+?', options: ['Index nested JSON objects', 'Index JSON array elements', 'Optimize exact JSON matches', 'Reduce JSON storage size'], correctAnswerIndex: 1, explanation: "Multi-valued indexes create entries for each JSON array element (e.g., [\"python\", \"sql\"] in profile->'$.skills'), optimizing queries like 'python' MEMBER OF (profile->'$.skills'). They don’t support nested objects or reduce storage."},
+            { id: 'idx_q13', text: "Which query benefits from a multi-valued index on profile->'$.skills'?", options: ["WHERE profile->>'$.role' = 'admin'", "WHERE 'python' MEMBER OF (profile->'$.skills')", "WHERE MATCH(bio) AGAINST('software engineer')", "WHERE email LIKE 'john.doe@%'"], correctAnswerIndex: 1, explanation: "A multi-valued index on profile->'$.skills' optimizes array searches like MEMBER OF, JSON_CONTAINS, or JSON_OVERLAPS. Other queries use different indexes (B-tree for role, full-text for bio, prefix for email)."},
+            { id: 'idx_q14', text: 'What does ANALYZE TABLE update besides index cardinality?', options: ['Table encryption keys', 'Row count and histograms', 'Foreign key constraints', 'Stored procedure logic'], correctAnswerIndex: 1, explanation: 'ANALYZE TABLE updates row count, histograms (MySQL 8.0+), average row size, and clustering factor, alongside cardinality. These stats ensure accurate optimizer decisions, preventing poor plans like full table scans.'},
+            { id: 'idx_q15', text: "When is a full-text index on bio preferred over a B-tree index?", options: ["For WHERE bio = 'software engineer'", "For ORDER BY bio", "For MATCH(bio) AGAINST('+software -manager' IN BOOLEAN MODE)", "For WHERE bio LIKE 'software%'"], correctAnswerIndex: 2, explanation: "Full-text indexes excel at Boolean or natural language searches (MATCH ... AGAINST), supporting complex logic like +software -manager. B-tree indexes handle exact matches, sorting, or prefix queries better."},
+            { id: 'idx_q16', text: 'What is the primary purpose of a MySQL index?', options: ['To slow down INSERT operations to ensure data integrity.', 'To speed up data retrieval for SELECT queries.', 'To reduce the storage space of the database.', 'To automatically back up data.'], correctAnswerIndex: 1, explanation: 'Indexes create a data structure (like a B-Tree) that allows the database to locate rows matching query conditions much faster than scanning the entire table, especially for SELECT statements with WHERE clauses.'},
+            { id: 'idx_q17', text: 'Which of the following is NOT a primary benefit of using indexes?', options: ['Reduced server load.', 'Faster JOIN operations.', 'Increased storage space required.', 'Improved performance when filtering data with WHERE.'], correctAnswerIndex: 2, explanation: 'Indexes are separate data structures that store copies of (or references to) table data, so they consume additional disk space. The other options are all key benefits.'},
+            { id: 'idx_q18', text: 'What is the most common underlying data structure used by MySQL for indexes (e.g., in InnoDB)?', options: ['Hash Table', 'Linked List', 'B-Tree (or B+Tree)', 'Stack'], correctAnswerIndex: 2, explanation: 'B-Trees (and their variant B+Trees, used by InnoDB) are well-suited for fast lookups, range scans, and sorting, which are common database operations.'},
+            { id: 'idx_q19', text: 'What is an index created on multiple columns called?', options: ['Prefix Index', 'Unique Index', 'Composite Index', 'Full-Text Index'], correctAnswerIndex: 2, explanation: 'A composite index (or multi-column index) includes two or more columns, allowing for optimized searches on combinations of these columns.'},
+            { id: 'idx_q20', text: "With a composite index on (colA, colB), can a query with WHERE colB = 'value' efficiently use this index?", options: ['Yes, always.', 'No, because colB is not the first column in the index definition.', 'Only if colA is also in the WHERE clause.', 'Only if the index is UNIQUE.'], correctAnswerIndex: 1, explanation: 'Composite indexes generally follow the "leftmost prefix" rule. For an index on (colA, colB) to be used efficiently, the query must involve colA, or colA and colB. A query on colB alone cannot directly use this specific index.'},
+            { id: 'idx_q21', text: 'What type of index ensures that all values in the indexed column (or combination of columns) are unique?', options: ['Clustered Index', 'Unique Index', 'Spatial Index', 'Covering Index'], correctAnswerIndex: 1, explanation: 'A unique index enforces the uniqueness constraint on the indexed column(s), preventing duplicate values. The primary key is an example of a unique index.'},
+            { id: 'idx_q22', text: 'In InnoDB, how is the Primary Key of a table implemented?', options: ['Always as a Non-Clustered Index.', 'As a Clustered Index.', 'As a Full-Text Index.', 'It is not automatically indexed.'], correctAnswerIndex: 1, explanation: 'InnoDB tables are organized around the primary key using a clustered index. This means the table data itself is physically stored in the order of the primary key.'},
+            { id: 'idx_q23', text: 'What does a Secondary Index (Non-Clustered Index) in InnoDB store in its leaf nodes?', options: ['The entire data of that row.', 'The direct physical disk address of the row data.', 'The value(s) of the indexed column(s) and the Primary Key value of that row.', 'Only the value(s) of the indexed column(s).'], correctAnswerIndex: 2, explanation: 'Secondary indexes in InnoDB store the primary key value as a pointer to the actual row data (which is stored in the clustered index).'},
+            { id: 'idx_q24', text: 'What is an index created on only the beginning part of a string column (e.g., the first 10 characters of a VARCHAR(255) column) called?', options: ['Multi-Valued Index', 'Functional Index', 'Prefix Index', 'Composite Index'], correctAnswerIndex: 2, explanation: 'A prefix index indexes only a specified number of leading characters of a string column. This can save space and improve performance for certain queries on long string columns.'},
+            { id: 'idx_q25', text: 'What is the purpose of the EXPLAIN statement in MySQL?', options: ['To execute the statement and return results.', 'To display the query execution plan chosen by the MySQL optimizer.', 'To analyze and fix syntax errors in SQL statements.', 'To automatically create indexes for slow queries.'], correctAnswerIndex: 1, explanation: 'EXPLAIN provides insight into how MySQL intends to execute a query, including which indexes it plans to use, the join order, and the type of access methods.'},
+            { id: 'idx_q26', text: 'In the output of EXPLAIN, which column indicates the access type MySQL uses (e.g., ALL, range, ref)?', options: ['key', 'rows', 'type', 'Extra'], correctAnswerIndex: 2, explanation: 'The type column describes how MySQL will join tables or access rows. Values like const, ref, range are generally good, while ALL (full table scan) is usually bad for large tables.'},
+            { id: 'idx_q27', text: 'In the EXPLAIN output, what does the value "Using index" in the Extra column usually mean?', options: ['MySQL used any available index.', 'The query performed a full table scan.', 'The query was satisfied entirely from the index (Covering Index), without needing to access the table.', 'MySQL had to sort the data using a filesort.'], correctAnswerIndex: 2, explanation: "Using index means all columns requested by the query were available in the index itself (a covering index), so MySQL didn't need to read the actual table rows, leading to better performance."},
+            { id: 'idx_q28', text: 'What is a "Covering Index"?', options: ['An index that includes all columns in the table.', 'An index that contains all the columns needed for a specific query.', 'Another name for a Primary Key.', 'An index that is encrypted for security.'], correctAnswerIndex: 1, explanation: 'A covering index includes all columns required by a query (in SELECT, WHERE, ORDER BY, GROUP BY). This allows MySQL to satisfy the query using only the index, avoiding table lookups.'},
+            { id: 'idx_q29', text: 'Which of the following reasons might cause the MySQL optimizer NOT to use an available index?', options: ['The index has very high selectivity.', 'The table has very few rows.', 'The WHERE clause uses a function on the indexed column (e.g., YEAR(date_created)).', 'The index is a covering index.'], correctAnswerIndex: 2, explanation: 'Applying functions to indexed columns in the WHERE clause usually prevents the optimizer from using the index directly on that column because the function changes the value being searched. Very small tables (B) might also lead to a table scan being chosen as cheaper.'},
+            { id: 'idx_q30', text: 'What does high "Index Cardinality" signify for an index?', options: ['The index has many duplicate values.', 'The index has high selectivity, making it very useful for filtering data.', 'The index occupies a large amount of disk space.', 'The index is only useful for ORDER BY queries.'], correctAnswerIndex: 1, explanation: 'High cardinality means there are many unique values in the indexed column relative to the total number of rows. This makes the index highly selective and effective for narrowing down search results.'},
+            { id: 'idx_q31', text: 'Which of the following commands is used to update index statistics (e.g., cardinality) used by the query optimizer?', options: ['OPTIMIZE TABLE', 'REPAIR TABLE', 'FLUSH TABLES', 'ANALYZE TABLE'], correctAnswerIndex: 3, explanation: 'ANALYZE TABLE collects and updates statistics about the table and its indexes, such as cardinality and data distribution, which the optimizer uses to make better query plan choices.'},
+            { id: 'idx_q32', text: 'What can having too many indexes on a table lead to?', options: ['Significantly speeding up all types of queries.', 'Reducing the required storage space.', 'Slowing down write operations (INSERT, UPDATE, DELETE).', 'Simplifying database maintenance.'], correctAnswerIndex: 2, explanation: 'While indexes speed up reads, they add overhead to write operations because each index must also be updated when data is inserted, updated, or deleted.'},
+            { id: 'idx_q33', text: 'What does the OPTIMIZE TABLE command typically do for InnoDB tables?', options: ['Only updates table statistics.', 'Deletes all unused indexes.', 'Rebuilds the table to defragment data and indexes.', 'Creates histograms for all columns.'], correctAnswerIndex: 2, explanation: 'For InnoDB, OPTIMIZE TABLE usually rebuilds the table, which helps to defragment the clustered index and secondary indexes, potentially reclaiming unused space and improving performance.'},
+            { id: 'idx_q34', text: 'When are Histograms in MySQL statistics most useful?', options: ['When data in a column is evenly distributed.', 'When data in a column has a highly skewed distribution.', 'When the table only contains integer columns.', 'When there is no Primary Key on the table.'], correctAnswerIndex: 1, explanation: 'Histograms provide more detailed information about the distribution of values in a column than simple cardinality. They are particularly helpful when data is skewed (some values appear much more frequently than others), allowing the optimizer to make better row estimates.'},
+            { id: 'idx_q35', text: 'When should you consider using a Full-Text Index?', options: ['When you need to find an exact match for a short character string.', 'When you need to perform natural language searches (e.g., searching for words or phrases in a large text block).', 'When you need to index decimal values.', 'When you need to ensure the uniqueness of a text column.'], correctAnswerIndex: 1, explanation: 'Full-Text Indexes are designed for word-based searches within text content, supporting features like relevance ranking and boolean operators, which are not available with standard B-Tree indexes or simple LIKE clauses.'},
+            { id: 'idx_q36', text: 'What is a common method to index specific values within a JSON column in MySQL?', options: ['Create a Full-Text Index directly on the JSON column.', 'Create "generated columns" from paths within the JSON and index these generated columns.', 'MySQL automatically indexes all keys within JSON objects.', 'JSON data cannot be effectively indexed.'], correctAnswerIndex: 1, explanation: 'Because you cannot directly index a JSON object in its entirety with a standard B-Tree index for querying specific paths, a common solution is to extract scalar values from the JSON into generated columns and then create standard indexes on those generated columns. Functional indexes on JSON paths are also an option in newer MySQL versions.'},
+            { id: 'idx_q37', text: 'What problem are Multi-Valued Indexes (MVIs) in MySQL 8.0 specifically designed to address?', options: ['Indexing columns with NULL values.', 'Indexing multiple columns more efficiently than composite indexes.', 'Indexing individual elements within a JSON array.', 'Indexing encrypted columns.'], correctAnswerIndex: 2, explanation: 'Multi-Valued Indexes allow MySQL to create index entries for each element within a JSON array, making it efficient to query for rows where the array contains specific values using functions like MEMBER OF() or JSON_CONTAINS().'},
+            { id: 'idx_q38', text: 'Which of the following syntax examples is typically used to create a Multi-Valued Index on a JSON array named tags (containing strings) within a data column?', options: ["CREATE INDEX idx_tags ON table (data->>'$.tags');", "CREATE FULLTEXT INDEX idx_tags ON table ((data->>'$.tags'));", "CREATE INDEX idx_tags ON table ((CAST(data->>'$.tags' AS CHAR(30) ARRAY)));", "CREATE INDEX idx_tags ON table (tags ARRAY);"], correctAnswerIndex: 2, explanation: "The CAST(... AS data_type ARRAY) syntax is used to define a multi-valued index, where data->>'$.tags' is the JSON path expression extracting the array, and CHAR(30) is the SQL type of the elements within that array that will be indexed."}
+        ]
+      }
+    ];
+
+    // --- Icons ---
+    const ICONS = { 
+        Home: `<svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
+        Heart: `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`, 
+        HeartOutline: `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
+        Volume2: `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`,
+        VolumeX: `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`
+    };
+
+    function getIcon(name) {
+        return ICONS[name] || '';
+    }
+    
+    // --- Audio Setup (Sound Effects Only) ---
+    let audioInitialized = false;
+    let clickSynth, finishSynth;
+    let soundsMuted = false; 
+    const soundToggleButton = document.createElement('button');
+    const topRightControlsContainer = document.getElementById('topRightControls');
+    const SOUND_MUTED_KEY = 'quizSoundsMuted';
+
+
+    function initializeAudio() {
+        if (audioInitialized) return;
+        try {
+            clickSynth = new Tone.MembraneSynth({
+                pitchDecay: 0.008,
+                octaves: 2,
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.05 },
+                volume: -18
+            }).toDestination();
+
+            finishSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.02, decay: 0.2, sustain: 0.1, release: 0.5 },
+                volume: -12
+            }).toDestination();
+            
+            const storedMuteState = localStorage.getItem(SOUND_MUTED_KEY);
+            soundsMuted = storedMuteState === 'true'; 
+
+            soundToggleButton.innerHTML = getIcon(soundsMuted ? 'VolumeX' : 'Volume2'); 
+            soundToggleButton.className = 'p-2 bg-slate-700 hover:bg-slate-600 text-indigo-300 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500';
+            soundToggleButton.setAttribute('aria-label', 'Toggle Sounds');
+            soundToggleButton.onclick = toggleAllSounds;
+            
+            if(topRightControlsContainer) {
+                topRightControlsContainer.appendChild(soundToggleButton);
+            }
+            audioInitialized = true; 
+        } catch (e) {
+            console.error("Error initializing Tone.js sound effect objects:", e);
+        }
+    }
+    
+    function toggleAllSounds() {
+        if (!audioInitialized && Tone.context.state !== 'running') { 
+            Tone.start().then(() => {
+                audioInitialized = true;
+                performSoundToggle();
+            }).catch(e => console.error("Error starting Tone.js via sound toggle:", e));
+            return;
+        }
+        performSoundToggle();
+    }
+
+    function performSoundToggle() {
+        soundsMuted = !soundsMuted;
+        soundToggleButton.innerHTML = getIcon(soundsMuted ? 'VolumeX' : 'Volume2'); 
+        localStorage.setItem(SOUND_MUTED_KEY, soundsMuted.toString());
+        if (!soundsMuted) { 
+            playSound('click');
+        }
+    }
+
+    async function playSound(type) {
+        if (soundsMuted) return; 
+
+        if (!audioInitialized || Tone.context.state !== 'running') {
+            try {
+                await Tone.start(); 
+                console.log("Audio context started by sound effect.");
+                audioInitialized = true; 
+            } catch (e) {
+                console.error("Could not start audio context for sound effect:", e);
+                return; 
+            }
+        }
+        if (!audioInitialized) return; 
+
+        if (type === 'click' && clickSynth) {
+            try { clickSynth.triggerAttackRelease('C2', '8n'); } 
+            catch(e) { console.error("Error playing click sound:", e); }
+        } else if (type === 'finish' && finishSynth) {
+            try { finishSynth.triggerAttackRelease(['C5', 'E5', 'G5'], '4n', Tone.now()); } 
+            catch(e) { console.error("Error playing finish sound:", e); }
+        }
+    }
+
+    // --- LocalStorage Keys ---
+    const ANSWERS_STORAGE_KEY = 'quizUserAnswers';
+    const SCORES_STORAGE_KEY = 'quizUserScores';
+    const FAVORITES_STORAGE_KEY = 'quizFavoriteQuizzes'; 
+
+    // --- App State ---
+    let currentPageId = 'quizListPage';
+    let selectedQuizId = null;
+    let currentQuestionIndex = 0;
+    let userAnswers = JSON.parse(localStorage.getItem(ANSWERS_STORAGE_KEY)) || {}; 
+    let quizScores = JSON.parse(localStorage.getItem(SCORES_STORAGE_KEY)) || {}; 
+    let favoriteQuizzes = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY)) || []; 
+    let activeQuizQuestions = []; 
+
+    // --- DOM Elements ---
+    const quizListPage = document.getElementById('quizListPage');
+    const quizInProgressPage = document.getElementById('quizInProgressPage');
+    const quizResultsPage = document.getElementById('quizResultsPage');
+    const explanationModePage = document.getElementById('explanationModePage');
+    const mainTitleElement = document.getElementById('mainTitle'); 
+
+    function saveUserAnswers() { localStorage.setItem(ANSWERS_STORAGE_KEY, JSON.stringify(userAnswers)); }
+    function saveQuizScores() { localStorage.setItem(SCORES_STORAGE_KEY, JSON.stringify(quizScores)); }
+    function saveFavoriteQuizzes() { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteQuizzes)); }
+
+    function shuffleArray(array) {
+        let currentIndex = array.length,  randomIndex;
+        const newArray = [...array]; 
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [newArray[currentIndex], newArray[randomIndex]] = [
+            newArray[randomIndex], newArray[currentIndex]];
+        }
+        return newArray;
+    }
+
+    function showPage(pageIdToShow) {
+        [quizListPage, quizInProgressPage, quizResultsPage, explanationModePage].forEach(page => {
+            if (page) page.style.display = 'none';
+        });
+        const pageToShowElement = document.getElementById(pageIdToShow);
+        if (pageToShowElement) pageToShowElement.style.display = 'block';
+        currentPageId = pageIdToShow;
+        mainTitleElement.style.display = (pageIdToShow === 'quizListPage') ? 'block' : 'none';
+        if (pageIdToShow === 'quizListPage') mainTitleElement.textContent = "Quiz Hub";
+        window.scrollTo(0, 0); 
+    }
+
+    function renderQuizList() {
+        const sortedQuizzes = [...sampleQuizzes].sort((a, b) => {
+            const isAFavorite = favoriteQuizzes.includes(a.id);
+            const isBFavorite = favoriteQuizzes.includes(b.id);
+            const aCompleted = quizScores[a.id] && quizScores[a.id].completed;
+            const bCompleted = quizScores[b.id] && quizScores[b.id].completed;
+
+            if (isAFavorite && !isBFavorite) return -1;
+            if (!isAFavorite && isBFavorite) return 1;
+            if (aCompleted && !bCompleted) return -1; 
+            if (!aCompleted && bCompleted) return 1; 
+            return 0; 
+        });
+
+        let cardContent = `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`; 
+        sortedQuizzes.forEach(quiz => {
+            const scoreData = quizScores[quiz.id];
+            const isFavorite = favoriteQuizzes.includes(quiz.id);
+            const heartIcon = isFavorite ? getIcon('Heart') : getIcon('HeartOutline');
+
+            if (scoreData && scoreData.completed) {
+                cardContent += `
+                <div class="w-full bg-slate-700/50 backdrop-blur-md text-slate-100 p-5 sm:p-6 rounded-xl shadow-xl border border-slate-600 hover:border-indigo-500 transition-colors duration-300 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-3 sm:mb-4">
+                            <h2 class="text-lg sm:text-xl font-semibold text-indigo-300 flex-grow">${quiz.title}</h2>
+                            <button onclick="handleToggleFavorite('${quiz.id}')" class="p-1 text-pink-400 hover:text-pink-300 focus:outline-none">
+                                ${heartIcon}
+                            </button>
+                        </div>
+                        <p class="text-2xl sm:text-3xl font-bold text-pink-400 mb-2 text-center">
+                        You got ${scoreData.percentage}% right!
+                        </p>
+                        <div class="flex justify-center items-center space-x-4 sm:space-x-6 my-3 sm:my-4">
+                        <div class="flex items-center space-x-1 text-green-400">
+                            <span class="text-2xl font-bold">✓</span>
+                            <span class="text-base sm:text-lg font-medium">${scoreData.correct} Correct</span>
+                        </div>
+                        <div class="flex items-center space-x-1 text-red-400">
+                            <span class="text-2xl font-bold">✗</span>
+                            <span class="text-base sm:text-lg font-medium">${scoreData.incorrect} Incorrect</span>
+                        </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 sm:mt-5 space-y-2 sm:flex sm:space-y-0 sm:space-x-3">
+                        <button onclick="handleViewExplanationsFromCard('${quiz.id}')"
+                                class="w-full sm:flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base">
+                        See Explanations
+                        </button>
+                        <button onclick="handleRetakeQuiz('${quiz.id}')"
+                                class="w-full sm:flex-1 bg-pink-600 hover:bg-pink-500 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors text-sm sm:text-base">
+                        Retake Quiz
+                        </button>
+                    </div>
+                </div>`;
+            } else {
+                const firstQuestion = quiz.questions[0]; 
+                let optionsPreviewHtml = '';
+                if (firstQuestion && firstQuestion.options) { 
+                    firstQuestion.options.forEach(option => {
+                        optionsPreviewHtml += `<div class="question-option-on-card">${option}</div>`;
+                    });
+                }
+                cardContent += `
+                <div class="w-full bg-slate-700/50 backdrop-blur-md text-slate-100 p-5 sm:p-6 rounded-xl shadow-xl border border-slate-600 hover:border-indigo-500 transition-colors duration-300 flex flex-col justify-between">
+                    <div>
+                         <div class="flex justify-between items-start mb-4">
+                            <h2 class="text-lg sm:text-xl font-semibold text-indigo-300 flex-grow">${quiz.title}</h2>
+                            <button onclick="handleToggleFavorite('${quiz.id}')" class="p-1 text-pink-400 hover:text-pink-300 focus:outline-none">
+                                ${heartIcon}
+                            </button>
+                        </div>
+                        ${firstQuestion ? `
+                        <div class="mb-4">
+                            <p class="text-slate-200 text-base sm:text-lg font-medium mb-3">${firstQuestion.text}</p>
+                            <div class="space-y-2">
+                                ${optionsPreviewHtml}
+                            </div>
+                        </div>` : '<p class="text-slate-400 mb-4">No questions available for preview.</p>'}
+                    </div>
+                    <button onclick="handleStartQuizFromCard('${quiz.id}')"
+                            class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition-colors text-base mt-4">
+                    Start Quiz
+                    </button>
+                </div>`;
+            }
+        });
+        cardContent += `</div>`;
+        quizListPage.innerHTML = cardContent;
+    }
+    
+    function renderQuizInProgressPage() {
+        if (!activeQuizQuestions || activeQuizQuestions.length === 0) {
+            quizInProgressPage.innerHTML = `<p class="text-center text-red-400">Error: Quiz questions not loaded.</p>`;
+            return;
+        }
+        const quiz = sampleQuizzes.find(q => q.id === selectedQuizId); 
+        const question = activeQuizQuestions[currentQuestionIndex];
+        const totalQuestions = activeQuizQuestions.length;
+        const currentQuizUserAnswers = userAnswers[selectedQuizId] || {};
+        const userAnswerForThisQuestion = currentQuizUserAnswers[question.id];
+        const isAnswerSelected = userAnswerForThisQuestion !== undefined;
+
+        let optionsHtml = '';
+        question.options.forEach((option, index) => {
+            const isSelected = userAnswerForThisQuestion === index; 
+            optionsHtml += `
+                <button onclick="handleAnswerSelect('${question.id}', ${index})"
+                        class="block w-full p-3 sm:p-4 text-left rounded-lg transition-all duration-200 text-sm sm:text-base
+                               ${isSelected 
+                                 ? 'bg-indigo-600 text-white border-2 border-indigo-300 ring-2 ring-indigo-300 shadow-lg scale-105' 
+                                 : 'bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 hover:border-indigo-500'}">
+                    ${option}
+                </button>`;
+        });
+
+        quizInProgressPage.innerHTML = `
+            <div class="space-y-5 sm:space-y-6">
+                <div class="flex justify-between items-center mb-3 sm:mb-4">
+                    <button onclick="handleBackToQuizList()" class="flex items-center text-indigo-300 hover:text-indigo-100 px-3 py-1.5 rounded-md text-sm font-medium">
+                        ${getIcon('Home')} Home
+                    </button>
+                    <h2 class="text-xl sm:text-2xl font-bold text-indigo-300 text-center flex-grow mx-2 line-clamp-1">${quiz.title}</h2>
+                    <div class="w-16"></div> </div>
+                <p class="text-base sm:text-lg font-semibold text-slate-100">${question.text}</p>
+                <div class="space-y-2.5 sm:space-y-3">${optionsHtml}</div>
+                <div class="flex justify-between items-center mt-6 sm:mt-8">
+                    <button onclick="handlePreviousQuestion()" ${currentQuestionIndex === 0 ? 'disabled' : ''}
+                            class="p-2.5 sm:p-3 bg-slate-700 hover:bg-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-slate-200 text-sm font-medium">
+                        &larr; Previous
+                    </button>
+                    <p class="text-slate-400 text-xs sm:text-sm">${currentQuestionIndex + 1}/${totalQuestions}</p>
+                    ${currentQuestionIndex === totalQuestions - 1 ? `
+                    <button onclick="handleFinishQuiz()"
+                            class="bg-pink-600 hover:bg-pink-500 text-white font-semibold py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg transition-colors text-sm sm:text-base ${!isAnswerSelected ? 'opacity-50 cursor-not-allowed' : ''}"
+                            ${!isAnswerSelected ? 'disabled' : ''}>
+                        Finish Quiz
+                    </button>` : `
+                    <button onclick="handleNextQuestion()"
+                            class="p-2.5 sm:p-3 bg-slate-700 hover:bg-slate-600 rounded-md text-slate-200 text-sm font-medium ${!isAnswerSelected ? 'opacity-50 cursor-not-allowed' : ''}"
+                            ${!isAnswerSelected ? 'disabled' : ''}>
+                        Next &rarr;
+                    </button>`}
+                </div>
+            </div>`;
+    }
+
+    function renderQuizResultsPage() {
+        const quiz = sampleQuizzes.find(q => q.id === selectedQuizId);
+        const score = quizScores[selectedQuizId];
+        if (!quiz || !score) return;
+
+        const percentage = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
+        let feedbackMessage = "Keep practicing!";
+        if (percentage === 100) feedbackMessage = "Amazing work! Perfect score!";
+        else if (percentage >= 75) feedbackMessage = "Great job! You know your stuff!";
+        else if (percentage >= 50) feedbackMessage = "Good effort! Room for improvement.";
+
+        quizResultsPage.innerHTML = `
+            <div class="text-center space-y-5 sm:space-y-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-indigo-300">${quiz.title} - Results</h2>
+                <p class="text-3xl sm:text-4xl font-bold text-pink-400">You scored ${percentage}%</p>
+                <p class="text-lg sm:text-xl text-slate-300">${feedbackMessage}</p>
+                <div class="flex justify-around items-center bg-slate-700/80 p-5 sm:p-6 rounded-lg">
+                    <div class="flex flex-col items-center space-y-1">
+                        <span class="text-3xl sm:text-4xl text-green-400 font-bold">✓</span>
+                        <p class="text-xl sm:text-2xl font-bold text-green-400">${score.correct}</p>
+                        <p class="text-slate-400 text-xs sm:text-sm">Correct</p>
+                    </div>
+                    <div class="flex flex-col items-center space-y-1">
+                        <span class="text-3xl sm:text-4xl text-red-400 font-bold">✗</span>
+                        <p class="text-xl sm:text-2xl font-bold text-red-400">${score.incorrect}</p>
+                        <p class="text-slate-400 text-xs sm:text-sm">Incorrect</p>
+                    </div>
+                </div>
+                <div class="space-y-2.5 sm:space-y-0 sm:flex sm:space-x-3 sm:justify-center">
+                    <button onclick="handleTryAgain()"
+                            class="w-full sm:w-auto flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-5 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">
+                        Try Again
+                    </button>
+                    <button onclick="handleSeeExplanations()"
+                            class="w-full sm:w-auto flex items-center justify-center bg-slate-600 hover:bg-slate-500 text-white font-semibold py-3 px-5 sm:px-6 rounded-lg transition-colors text-sm sm:text-base">
+                        See Explanations
+                    </button>
+                </div>
+                <button onclick="handleBackToQuizList()"
+                        class="w-full sm:w-auto flex items-center justify-center text-indigo-300 hover:text-indigo-100 font-semibold py-3 px-5 sm:px-6 rounded-lg transition-colors border border-indigo-500 hover:border-indigo-400 mt-3 sm:mt-4 text-sm sm:text-base">
+                    Back to Quiz List
+                </button>
+            </div>`;
+    }
+
+    function renderExplanationModePage() {
+        const quiz = sampleQuizzes.find(q => q.id === selectedQuizId);
+        if (!quiz) return;
+        const question = quiz.questions[currentQuestionIndex]; 
+        const currentQuizUserAnswers = userAnswers[selectedQuizId] || {};
+        const userAnswerIndex = currentQuizUserAnswers[question.id];
+
+        let optionsHtml = '';
+        question.options.forEach((option, index) => {
+            let optionStyle = 'bg-slate-700 text-slate-200 border border-slate-600'; 
+
+            if (index === question.correctAnswerIndex) {
+                optionStyle = 'bg-green-700/80 text-white border-2 border-green-500 ring-1 ring-green-400';
+            } else if (index === userAnswerIndex && userAnswerIndex !== undefined) { 
+                optionStyle = 'bg-red-700/80 text-white border-2 border-red-500 ring-1 ring-red-400';
+            }
+            
+            optionsHtml += `
+                <div class="block w-full p-3 sm:p-4 text-left rounded-lg ${optionStyle} text-sm sm:text-base">
+                    ${option}
+                </div>`;
+        });
+
+        explanationModePage.innerHTML = `
+            <div class="space-y-5 sm:space-y-6">
+                <div class="flex justify-between items-center mb-3 sm:mb-4">
+                    <button onclick="handleBackToResults()" class="text-indigo-300 hover:text-indigo-100 px-3 py-1.5 rounded-md text-sm font-medium">
+                        &larr; Back to Results
+                    </button>
+                    <h2 class="text-lg sm:text-xl font-bold text-indigo-300 text-center flex-grow mx-2 line-clamp-1">${quiz.title}</h2>
+                    <button onclick="handleBackToQuizList()" class="flex items-center text-indigo-300 hover:text-indigo-100 px-3 py-1.5 rounded-md text-sm font-medium">
+                         ${getIcon('Home')} Home
+                    </button>
+                </div>
+                <p class="text-base sm:text-lg font-semibold text-slate-100">${question.text}</p>
+                <div class="space-y-2.5 sm:space-y-3">${optionsHtml}</div>
+                <div class="bg-slate-700/80 p-3 sm:p-4 rounded-lg">
+                    <h3 class="text-base sm:text-lg font-semibold text-indigo-300 mb-1.5 sm:mb-2">Explanation:</h3>
+                    <p class="text-slate-200 text-sm sm:text-base">${question.explanation}</p>
+                </div>
+                <div class="flex justify-between items-center mt-6 sm:mt-8">
+                    <button onclick="handlePreviousExplanation()" ${currentQuestionIndex === 0 ? 'disabled' : ''}
+                            class="p-2.5 sm:p-3 bg-slate-700 hover:bg-slate-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-slate-200 text-sm font-medium">
+                        &larr; Previous
+                    </button>
+                    <p class="text-slate-400 text-xs sm:text-sm">${currentQuestionIndex + 1}/${quiz.questions.length}</p>
+                    <button onclick="handleNextExplanation()" ${currentQuestionIndex === quiz.questions.length - 1 ? 'disabled' : ''}
+                            class="p-2.5 sm:p-3 bg-slate-700 hover:bg-slate-600 rounded-md text-slate-200 text-sm font-medium">
+                        Next &rarr;
+                    </button>
+                </div>
+            </div>`;
+    }
+
+    // --- Confetti Function ---
+    function launchConfetti() {
+        if (typeof confetti !== 'function') { 
+            console.warn("Confetti library not loaded.");
+            return;
+        }
+        const duration = 3 * 1000; 
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 }; 
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
+    }
+
+    // --- Event Handlers ---
+    window.handleToggleFavorite = (quizId) => {
+        playSound('click'); 
+        const index = favoriteQuizzes.indexOf(quizId);
+        if (index > -1) {
+            favoriteQuizzes.splice(index, 1); 
+        } else {
+            favoriteQuizzes.push(quizId); 
+        }
+        saveFavoriteQuizzes();
+        renderQuizList(); 
+    };
+
+    window.handleStartQuizFromCard = (quizId) => {
+        playSound('click');
+        selectedQuizId = quizId;
+        const quiz = sampleQuizzes.find(q => q.id === selectedQuizId);
+        if (quiz) {
+            activeQuizQuestions = shuffleArray(quiz.questions); 
+        } else {
+            activeQuizQuestions = []; 
+        }
+        currentQuestionIndex = 0;
+        if (!userAnswers[selectedQuizId]) { 
+            userAnswers[selectedQuizId] = {};
+        }
+        if (quizScores[selectedQuizId]) {
+            quizScores[selectedQuizId].completed = false;
+        }
+        saveQuizScores(); 
+        renderQuizInProgressPage();
+        showPage('quizInProgressPage');
+    };
+
+    window.handleRetakeQuiz = (quizId) => {
+        playSound('click');
+        selectedQuizId = quizId;
+        const quiz = sampleQuizzes.find(q => q.id === selectedQuizId);
+        if (quiz) {
+            activeQuizQuestions = shuffleArray(quiz.questions); 
+        } else {
+            activeQuizQuestions = []; 
+        }
+        currentQuestionIndex = 0;
+        userAnswers[selectedQuizId] = {}; 
+        if (quizScores[selectedQuizId]) {
+            quizScores[selectedQuizId].completed = false; 
+        }
+        saveUserAnswers(); 
+        saveQuizScores(); 
+        renderQuizInProgressPage();
+        showPage('quizInProgressPage');
+    };
+    
+    window.handleAnswerSelect = (questionId, optionIndex) => {
+        playSound('click');
+        if (!userAnswers[selectedQuizId]) {
+            userAnswers[selectedQuizId] = {};
+        }
+        userAnswers[selectedQuizId][questionId] = optionIndex;
+        saveUserAnswers(); 
+        renderQuizInProgressPage(); 
+    };
+
+    window.handleNextQuestion = () => {
+        const currentQuizUserAnswers = userAnswers[selectedQuizId] || {};
+        const question = activeQuizQuestions[currentQuestionIndex];
+        const isAnswerSelected = currentQuizUserAnswers[question.id] !== undefined;
+
+        if (activeQuizQuestions && currentQuestionIndex < activeQuizQuestions.length - 1 && isAnswerSelected) {
+            playSound('click');
+            currentQuestionIndex++;
+            renderQuizInProgressPage();
+        }
+    };
+
+    window.handlePreviousQuestion = () => {
+        if (currentQuestionIndex > 0) {
+            playSound('click');
+            currentQuestionIndex--;
+            renderQuizInProgressPage();
+        }
+    };
+
+    window.handleFinishQuiz = () => {
+        if (!activeQuizQuestions || activeQuizQuestions.length === 0) return;
+        
+        const currentQuizUserAnswers = userAnswers[selectedQuizId] || {};
+        const question = activeQuizQuestions[currentQuestionIndex]; 
+        const isAnswerSelected = currentQuizUserAnswers[question.id] !== undefined;
+
+        if (!isAnswerSelected) return; 
+        
+        playSound('finish'); 
+
+        let correctCount = 0;
+        activeQuizQuestions.forEach(q_item => { 
+            if (currentQuizUserAnswers[q_item.id] === q_item.correctAnswerIndex) {
+                correctCount++;
+            }
+        });
+        const totalQuestions = activeQuizQuestions.length;
+        quizScores[selectedQuizId] = {
+            correct: correctCount,
+            incorrect: totalQuestions - correctCount,
+            total: totalQuestions,
+            percentage: totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0,
+            completed: true,
+        };
+        saveQuizScores(); 
+        
+        launchConfetti(); 
+
+        renderQuizResultsPage();
+        showPage('quizResultsPage');
+    };
+
+    window.handleTryAgain = () => { 
+        if (!selectedQuizId) return;
+        playSound('click');
+        window.handleRetakeQuiz(selectedQuizId); 
+    };
+
+    window.handleSeeExplanations = () => { 
+        playSound('click');
+        currentQuestionIndex = 0; 
+        renderExplanationModePage();
+        showPage('explanationModePage');
+    };
+    
+    window.handleViewExplanationsFromCard = (quizId) => { 
+        playSound('click');
+        selectedQuizId = quizId;
+        currentQuestionIndex = 0; 
+        renderExplanationModePage();
+        showPage('explanationModePage');
+    };
+
+    window.handleNextExplanation = () => {
+        const quiz = sampleQuizzes.find(q => q.id === selectedQuizId); 
+        if (quiz && currentQuestionIndex < quiz.questions.length - 1) {
+            playSound('click');
+            currentQuestionIndex++;
+            renderExplanationModePage();
+        }
+    };
+    
+    window.handlePreviousExplanation = () => {
+        if (currentQuestionIndex > 0) {
+            playSound('click');
+            currentQuestionIndex--;
+            renderExplanationModePage();
+        }
+    };
+
+    window.handleBackToQuizList = () => {
+        playSound('click');
+        renderQuizList();
+        showPage('quizListPage');
+    };
+
+    window.handleBackToResults = () => {
+        playSound('click');
+        renderQuizResultsPage();
+        showPage('quizResultsPage');
+    };
+
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeAudio(); 
+        renderQuizList();
+        showPage('quizListPage'); 
+    });
+
+</script>
+
+</body>
+</html>
