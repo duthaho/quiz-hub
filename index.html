@@ -128,6 +128,133 @@
             { id: 'idx_q37', text: 'What problem are Multi-Valued Indexes (MVIs) in MySQL 8.0 specifically designed to address?', options: ['Indexing columns with NULL values.', 'Indexing multiple columns more efficiently than composite indexes.', 'Indexing individual elements within a JSON array.', 'Indexing encrypted columns.'], correctAnswerIndex: 2, explanation: 'Multi-Valued Indexes allow MySQL to create index entries for each element within a JSON array, making it efficient to query for rows where the array contains specific values using functions like MEMBER OF() or JSON_CONTAINS().'},
             { id: 'idx_q38', text: 'Which of the following syntax examples is typically used to create a Multi-Valued Index on a JSON array named tags (containing strings) within a data column?', options: ["CREATE INDEX idx_tags ON table (data->>'$.tags');", "CREATE FULLTEXT INDEX idx_tags ON table ((data->>'$.tags'));", "CREATE INDEX idx_tags ON table ((CAST(data->>'$.tags' AS CHAR(30) ARRAY)));", "CREATE INDEX idx_tags ON table (tags ARRAY);"], correctAnswerIndex: 2, explanation: "The CAST(... AS data_type ARRAY) syntax is used to define a multi-valued index, where data->>'$.tags' is the JSON path expression extracting the array, and CHAR(30) is the SQL type of the elements within that array that will be indexed."}
         ]
+      },
+      {
+        id: 'mysql_transaction',
+        title: 'MySQL Transactions',
+        description: 'Understand transactions and ACID properties in MySQL.',
+        questions: [
+            {
+                id: 'txn_q1',
+                text: 'What is a transaction in MySQL?',
+                options: ['A single SQL query that modifies data', 'A sequence of SQL operations treated as a single unit', 'A backup of the database', 'A stored procedure for automating tasks'],
+                correctAnswerIndex: 1,
+                explanation: 'A transaction in MySQL is a sequence of SQL operations (e.g., INSERT, UPDATE) that are executed as a single, indivisible unit. Either all operations succeed, or none are applied, ensuring data integrity. Option A is too narrow, C is unrelated, and D refers to a different concept.'
+            },
+            {
+                id: 'txn_q2',
+                text: 'Which ACID property ensures that all operations in a transaction are completed or none are applied?',
+                options: ['Atomicity', 'Consistency', 'Isolation', 'Durability'],
+                correctAnswerIndex: 0,
+                explanation: 'Atomicity ensures that all operations in a transaction are completed successfully, or the entire transaction is rolled back, preventing partial updates. Consistency maintains database validity, Isolation separates transactions, and Durability ensures committed changes are saved.'
+            },
+            {
+                id: 'txn_q3',
+                text: 'Which MySQL storage engine fully supports transactions and ACID properties?',
+                options: ['MyISAM', 'InnoDB', 'MEMORY', 'CSV'],
+                correctAnswerIndex: 1,
+                explanation: 'InnoDB is the only MySQL storage engine that fully supports transactions and ACID properties, making it ideal for applications requiring data integrity. MyISAM lacks transaction support, MEMORY is for temporary tables, and CSV is for file-based storage.'
+            },
+            {
+                id: 'txn_q4',
+                text: 'Which SQL command permanently saves changes made in a transaction?',
+                options: ['START TRANSACTION', 'COMMIT', 'ROLLBACK', 'SAVEPOINT'],
+                correctAnswerIndex: 1,
+                explanation: 'The COMMIT command saves all changes made during a transaction, making them permanent. START TRANSACTION begins a transaction, ROLLBACK undoes changes, and SAVEPOINT sets a checkpoint for partial rollbacks.'
+            },
+            {
+                id: 'txn_q5',
+                text: 'Which isolation level is the default in MySQL (InnoDB)?',
+                options: ['READ UNCOMMITTED', 'READ COMMITTED', 'REPEATABLE READ', 'SERIALIZABLE'],
+                correctAnswerIndex: 2,
+                explanation: 'REPEATABLE READ is InnoDB’s default isolation level, preventing dirty reads and non-repeatable reads while mostly preventing phantom reads using MVCC and gap locks. Other levels offer less or more strict isolation but are not the default.'
+            },
+            {
+                id: 'txn_q6',
+                text: 'Which concurrency issue occurs when a transaction reads uncommitted changes from another transaction?',
+                options: ['Dirty Read', 'Non-Repeatable Read', 'Phantom Read', 'Lost Update'],
+                correctAnswerIndex: 0,
+                explanation: 'A Dirty Read occurs when a transaction reads uncommitted changes that may later be rolled back, leading to invalid data. Non-Repeatable Reads involve committed changes, Phantom Reads involve new rows, and Lost Updates involve conflicting writes.'
+            },
+            {
+                id: 'txn_q7',
+                text: 'How does InnoDB’s Multi-Version Concurrency Control (MVCC) improve concurrency?',
+                options: ['Locks entire tables during reads', 'Creates snapshots for non-blocking reads', 'Prevents all writes during transactions', 'Automatically rolls back all transactions'],
+                correctAnswerIndex: 1,
+                explanation: 'MVCC creates snapshots of data at the start of a transaction, allowing reads to see a consistent view without blocking writes. This improves concurrency in levels like REPEATABLE READ. Other options misrepresent MVCC’s functionality.'
+            },
+            {
+                id: 'txn_q8',
+                text: 'What mechanism does InnoDB use to prevent phantom reads in REPEATABLE READ?',
+                options: ['Table-Level Locking', 'Row-Level Locking', 'Gap Locks and Next-Key Locks', 'Undo Logs'],
+                correctAnswerIndex: 2,
+                explanation: 'Gap Locks and Next-Key Locks prevent phantom reads by locking ranges of data to block inserts in queried ranges. Row-Level Locking handles specific rows, Table-Level Locking is less granular, and Undo Logs support MVCC and rollbacks.'
+            },
+            {
+                id: 'txn_q9',
+                text: 'What happens when InnoDB detects a deadlock?',
+                options: ['Both transactions are committed', 'One transaction is rolled back', 'The database crashes', 'All transactions are paused indefinitely'],
+                correctAnswerIndex: 1,
+                explanation: 'InnoDB detects deadlocks (circular lock dependencies) and rolls back one transaction (usually the one with fewer changes) to resolve the issue, allowing the other to proceed. This prevents indefinite waiting and maintains system stability.'
+            },
+            {
+                id: 'txn_q10',
+                text: 'How can you mitigate lock contention in a high-concurrency MySQL environment?',
+                options: ['Use longer transactions', 'Lower the isolation level to READ UNCOMMITTED', 'Optimize indexes to reduce lock scope', 'Disable MVCC'],
+                correctAnswerIndex: 2,
+                explanation: 'Optimizing indexes reduces the number of rows locked during queries, minimizing lock contention. Longer transactions increase contention, READ UNCOMMITTED risks dirty reads, and disabling MVCC is not practical as it’s integral to InnoDB’s concurrency.'
+            },
+            // New questions for MySQL Transactions
+            {
+                id: 'txn_q11',
+                text: 'Which of the following ACID properties ensures that either all operations within a transaction succeed, or none of them do, preventing partial updates?',
+                options: ['Consistency', 'Isolation', 'Durability', 'Atomicity'],
+                correctAnswerIndex: 3,
+                explanation: 'Atomicity guarantees that a transaction is treated as a single, indivisible unit. If any part fails, the entire transaction is rolled back, leaving the database unchanged.'
+            },
+            {
+                id: 'txn_q12',
+                text: 'Which MySQL storage engine is specifically designed to fully support transactions and the ACID properties, making it the primary choice for transactional workloads?',
+                options: ['MyISAM', 'MEMORY', 'InnoDB', 'CSV'],
+                correctAnswerIndex: 2,
+                explanation: 'InnoDB is the default and only ACID-compliant, transactional storage engine in MySQL, offering features like row-level locking and MVCC. MyISAM, MEMORY, and CSV do not fully support transactions.'
+            },
+            {
+                id: 'txn_q13',
+                text: "You've started a transaction using START TRANSACTION; and performed several UPDATE statements. What SQL command would you use to discard all the changes made within this transaction and revert the database to its state before the transaction began?",
+                options: ['SAVEPOINT;', 'COMMIT;', 'ROLLBACK;', 'END TRANSACTION;'],
+                correctAnswerIndex: 2,
+                explanation: 'ROLLBACK; is used to undo all modifications made during the current transaction, restoring the database to its state prior to START TRANSACTION; or BEGIN;. COMMIT; saves changes, and SAVEPOINT; creates a point for partial rollbacks.'
+            },
+            {
+                id: 'txn_q14',
+                text: 'In MySQL (InnoDB), which transaction isolation level is the default and prevents "Dirty Reads" and "Non-Repeatable Reads," but may still allow "Phantom Reads"?',
+                options: ['READ UNCOMMITTED', 'READ COMMITTED', 'REPEATABLE READ', 'SERIALIZABLE'],
+                correctAnswerIndex: 2,
+                explanation: "REPEATABLE READ is MySQL's default isolation level. It uses MVCC to provide a consistent snapshot, preventing dirty and non-repeatable reads. While it addresses many phantom read scenarios with gap locks, standard definitions often list phantoms as a possibility."
+            },
+            {
+                id: 'txn_q15',
+                text: 'Which InnoDB concurrency control mechanism allows readers to see a consistent, older version of a row without being blocked by writers, significantly improving read concurrency?',
+                options: ['Row-Level Locking', 'Gap Locking', 'Multi-Version Concurrency Control (MVCC)', 'Redo Logging'],
+                correctAnswerIndex: 2,
+                explanation: "MVCC achieves high read concurrency by allowing transactions to access different versions of data (managed via undo logs), so readers don't block writers, and writers don't block readers unnecessarily. Row-level locking helps, but MVCC specifically handles the read-write concurrency without blocking."
+            },
+            {
+                id: 'txn_q16',
+                text: 'Two transactions (T1 and T2) are in a deadlock. T1 holds a lock on Row A and needs Row B (locked by T2). T2 holds a lock on Row B and needs Row A (locked by T1). Which common strategy does InnoDB use to resolve this situation?',
+                options: ['It waits indefinitely until one transaction releases its lock.', 'It automatically detects the deadlock and rolls back one of the transactions.', 'It grants both transactions the requested locks simultaneously.', 'It converts row locks to table locks to resolve the conflict.'],
+                correctAnswerIndex: 1,
+                explanation: 'InnoDB has an integrated deadlock detection mechanism. When a deadlock is detected, it automatically chooses one of the transactions (the "victim") to roll back, thereby releasing its locks and allowing the other transaction to proceed.'
+            },
+            {
+                id: 'txn_q17',
+                text: 'You observe your MySQL application experiencing slowdowns and high wait times, even when CPU and disk I/O are not maxed out. SHOW ENGINE INNODB STATUS frequently shows many transactions in a "waiting for lock" state on the same few rows. What is the most likely concurrency-related problem?',
+                options: ['Network Latency', 'CPU Bottleneck', 'Lock Contention', 'Disk I/O Saturation'],
+                correctAnswerIndex: 2,
+                explanation: 'Waiting for lock states, especially on specific "hot" rows, are a classic symptom of lock contention, where multiple transactions are trying to access and modify the same data concurrently, leading to blocking.'
+            }
+        ]
       }
     ];
 
@@ -162,13 +289,13 @@
                 octaves: 2,
                 oscillator: { type: "sine" },
                 envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.05 },
-                volume: -5
+                volume: -5 
             }).toDestination();
 
             finishSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: { type: 'triangle' },
                 envelope: { attack: 0.02, decay: 0.2, sustain: 0.1, release: 0.5 },
-                volume: -3
+                volume: -3 
             }).toDestination();
             
             const storedMuteState = localStorage.getItem(SOUND_MUTED_KEY);
@@ -179,7 +306,6 @@
             soundToggleButton.setAttribute('aria-label', 'Toggle Sounds');
             soundToggleButton.onclick = toggleAllSounds;
             
-            // Create GitHub Link
             const githubLink = document.createElement('a');
             githubLink.href = 'https://github.com/duthaho/quiz-hub/';
             githubLink.target = '_blank';
